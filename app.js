@@ -255,6 +255,32 @@ muteBtn.addEventListener('click', () => {
 });
 $('controls').appendChild(muteBtn);
 
+// ══════════════════════════════════════════
+//  산타 인트로 시퀀스
+//  선물 열기 → 음악 시작 → 산타 비행 → 상자 등장 → 상자 열림 → 오프닝
+// ══════════════════════════════════════════
+function runIntro() {
+  Music.start(); // 이 클릭으로 음악 시작 (autoplay 정책 통과)
+  const stage = $('santaStage');
+  $('intro').classList.add('hide');       // 인트로 문구 페이드아웃
+  stage.classList.add('on');
+
+  // 산타 비행 + 상자 투하
+  setTimeout(() => { stage.classList.add('fly'); }, 200);
+  setTimeout(() => { stage.classList.add('drop'); }, 300);   // 1.5s 딜레이는 CSS에
+
+  // 상자 열림 (산타 지나가고 상자 안착된 뒤)
+  setTimeout(() => { stage.classList.add('open'); }, 2900);
+
+  // 빛 터질 때 오프닝 등장
+  setTimeout(() => {
+    $('opening').style.opacity = '1';
+    $('opening').style.pointerEvents = 'auto';
+    stage.classList.remove('on', 'fly', 'drop', 'open'); // 무대 정리
+  }, 3900);
+}
+$('openBtn').addEventListener('click', runIntro);
+
 // 지도 리사이즈 보정
 setTimeout(() => map.invalidateSize(), 300);
 window.addEventListener('resize', () => map.invalidateSize());
