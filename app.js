@@ -262,12 +262,6 @@ $('controls').appendChild(muteBtn);
 const introVideo = $('introVideo');
 let introDone = false;
 
-// 받는 그룹 이름으로 인트로 문구 채우기
-(function setHint() {
-  const name = (typeof RECIPIENT !== 'undefined' && RECIPIENT) ? RECIPIENT : '우리 가족';
-  $('introHint').textContent = `🎁 ${name}에게 선물이 도착했어요`;
-})();
-
 function goToOpening() {
   if (introDone) return;
   introDone = true;
