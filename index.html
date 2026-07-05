@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>2026, 우리가 함께한 순간들</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --ink: #0b1026;          /* 겨울밤 하늘 (딥 네이비) */
+    --ink2: #131a3a;
+    --frost: #eaf2ff;        /* 성에 낀 창문 빛 */
+    --frost-dim: #9fb2d8;
+    --gold: #ffd98a;         /* 창문 안 따뜻한 불빛 */
+    --gold-deep: #f5a94e;
+    --pine: #6fd8a8;         /* 전나무 초록 */
+    --berry: #ff6b7a;        /* 홀리 베리 */
+    --line: rgba(234,242,255,.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: radial-gradient(120% 90% at 50% -10%, #1b2450 0%, var(--ink) 55%, #060a1c 100%);
+    color: var(--frost);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 스크롤바 숨김 */
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  #stage { position: fixed; inset: 0; }
+
+  /* ── 지도 ── */
+  #map {
+    position: absolute; inset: 0;
+    background: #0a0f24;
+    filter: saturate(.55) brightness(.62) contrast(1.05);
+    transition: filter 1.2s ease;
+  }
+  /* 지도 위 어둠 오버레이 (밤 느낌 + 텍스트 가독성) */
+  #mapVeil {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(80% 60% at 50% 45%, transparent 0%, rgba(6,10,28,.35) 70%, rgba(6,10,28,.72) 100%);
+    z-index: 400;
+  }
+
+  /* ── 눈 ── */
+  #snow { position: absolute; inset: 0; pointer-events: none; z-index: 600; overflow: hidden; }
+  .flake { position: absolute; top: -5vh; color: #fff; opacity: .0; will-change: transform; }
+
+  /* ── 커스텀 핀 마커 ── */
+  .momentpin {
+    width: 44px; height: 44px; position: relative;
+    transform: translateY(6px) scale(0);
+    transition: transform .5s cubic-bezier(.2,1.4,.4,1);
+  }
+  .momentpin.show { transform: translateY(0) scale(1); }
+  .momentpin .dot {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 40px; height: 40px; border-radius: 50% 50% 50% 4px;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(-45deg);
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+    box-shadow: 0 0 0 3px rgba(255,217,138,.28), 0 8px 20px rgba(0,0,0,.55);
+    display: grid; place-items: center;
+  }
+  .momentpin .dot span { transform: rotate(45deg); font-size: 18px; }
+  .momentpin .pulse {
+    position: absolute; left: 50%; top: 20px; transform: translate(-50%,-50%);
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--gold); opacity: .5;
+    animation: pulse 1.6s ease-out infinite;
+  }
+  @keyframes pulse {
+    0% { transform: translate(-50%,-50%) scale(.4); opacity: .5; }
+    100% { transform: translate(-50%,-50%) scale(2.4); opacity: 0; }
+  }
+
+  /* ── 사진 팝업 카드 ── */
+  #photoCard {
+    position: absolute; z-index: 700; left: 50%; bottom: 128px;
+    transform: translateX(-50%) translateY(24px);
+    width: min(78vw, 300px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .5s ease, transform .5s cubic-bezier(.2,1,.3,1);
+  }
+  #photoCard.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .polaroid {
+    background: #fbfbf7; border-radius: 14px; padding: 10px 10px 0;
+    box-shadow: 0 18px 50px rgba(0,0,0,.6);
+    transform: rotate(-2deg);
+  }
+  .polaroid .photo {
+    width: 100%; aspect-ratio: 4/3; border-radius: 8px;
+    display: grid; place-items: center; font-size: 60px;
+    position: relative; overflow: hidden;
+  }
+  .polaroid .cap {
+    padding: 12px 6px 14px; color: #23252e;
+    font-family: 'Gaegu', 'Pretendard', sans-serif;
+  }
+  .polaroid .cap .who { font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+  .polaroid .cap .where { font-size: 12.5px; color: #6a6f7e; margin-top: 3px; }
+  .polaroid .cap .when { font-size: 11px; color: #a2a7b5; margin-top: 6px; letter-spacing: .3px; }
+  .avatarSm { width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 10px; font-weight: 800; }
+
+  /* ── 상단 진행 표시 ── */
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 700;
+    padding: calc(env(safe-area-inset-top,0px) + 16px) 18px 0;
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none;
+  }
+  #hudTop { display: flex; align-items: center; justify-content: space-between; }
+  #dateChip {
+    background: rgba(11,16,38,.6); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); color: var(--frost);
+    padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
+    letter-spacing: .4px;
+  }
+  #counter { font-size: 12px; color: var(--frost-dim); font-weight: 600; }
+  #bar { height: 3px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
+  #barFill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--pine)); transition: width .6s ease; }
+
+  /* ── 오프닝 / 엔딩 오버레이 ── */
+  .screen {
+    position: absolute; inset: 0; z-index: 800;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 32px;
+    background: radial-gradient(100% 80% at 50% 30%, rgba(27,36,80,.6), rgba(6,10,28,.94));
+    backdrop-filter: blur(2px);
+    transition: opacity .8s ease;
+  }
+  .screen.hide { opacity: 0 !important; pointer-events: none !important; }
+
+  .eyebrow {
+    font-size: 13px; letter-spacing: 4px; color: var(--gold);
+    font-weight: 700; text-transform: uppercase; margin-bottom: 18px;
+    opacity: 0; animation: rise .9s .2s forwards;
+  }
+  .bigTitle {
+    font-family: 'Gaegu', 'Pretendard', sans-serif;
+    font-size: clamp(30px, 8.5vw, 46px); font-weight: 700; line-height: 1.28;
+    letter-spacing: -.5px;
+    opacity: 0; animation: rise 1s .45s forwards;
+  }
+  .bigTitle .hl { color: var(--gold); }
+  .sub {
+    margin-top: 20px; font-size: 15px; color: var(--frost-dim); line-height: 1.7;
+    opacity: 0; animation: rise 1s .8s forwards;
+  }
+  .playBtn {
+    margin-top: 40px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 16px; font-weight: 800; color: #26170a;
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+    padding: 15px 34px; border-radius: 40px;
+    box-shadow: 0 12px 34px rgba(245,169,78,.4);
+    opacity: 0; animation: rise 1s 1.15s forwards;
+    display: inline-flex; align-items: center; gap: 9px;
+  }
+  .playBtn:active { transform: scale(.96); }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px);} to { opacity: 1; transform: translateY(0);} }
+
+  /* 엔딩 통계 */
+  .stats { display: flex; gap: 26px; margin-top: 30px; opacity: 0; animation: rise 1s .7s forwards; }
+  .stat .n { font-family: 'Gaegu', sans-serif; font-size: 40px; font-weight: 700; color: var(--gold); line-height: 1; }
+  .stat .l { font-size: 12px; color: var(--frost-dim); margin-top: 8px; letter-spacing: .5px; }
+  .replay {
+    margin-top: 36px; background: transparent; border: 1px solid var(--line);
+    color: var(--frost); font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 12px 24px; border-radius: 30px; cursor: pointer;
+    opacity: 0; animation: rise 1s 1.1s forwards;
+  }
+  .replay:active { transform: scale(.96); }
+
+  /* 하단 컨트롤 */
+  #controls {
+    position: absolute; bottom: calc(env(safe-area-inset-bottom,0px) + 20px);
+    left: 50%; transform: translateX(-50%); z-index: 700;
+    display: flex; gap: 10px; align-items: center;
+    background: rgba(11,16,38,.55); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); padding: 8px 10px; border-radius: 30px;
+    opacity: 0; transition: opacity .5s ease;
+  }
+  #controls.show { opacity: 1; }
+  #controls button {
+    border: none; background: transparent; color: var(--frost);
+    font-size: 15px; cursor: pointer; padding: 6px 12px; border-radius: 20px;
+    font-family: inherit; font-weight: 600;
+  }
+  #controls button:active { background: rgba(255,255,255,.1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; transition-duration: .12s !important; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="map"></div>
+  <div id="mapVeil"></div>
+  <div id="snow"></div>
+
+  <div id="hud" style="opacity:0; transition:opacity .6s;">
+    <div id="hudTop">
+      <div id="dateChip">—</div>
+      <div id="counter">—</div>
+    </div>
+    <div id="bar"><div id="barFill"></div></div>
+  </div>
+
+  <div id="photoCard"><div class="polaroid">
+    <div class="photo" id="photoInner"></div>
+    <div class="cap">
+      <div class="who" id="capWho"></div>
+      <div class="where" id="capWhere"></div>
+      <div class="when" id="capWhen"></div>
+    </div>
+  </div></div>
+
+  <div id="controls">
+    <button id="pauseBtn">⏸ 일시정지</button>
+    <button id="skipBtn">건너뛰기 ⏭</button>
+  </div>
+
+  <!-- 오프닝 -->
+  <div class="screen" id="opening">
+    <div class="eyebrow">🎄 Merry Christmas</div>
+    <div class="bigTitle">2026년,<br/>우리가 함께한 <span class="hl">순간들</span></div>
+    <div class="sub">올 한 해, 우리 가족이 남긴 안부를<br/>지도 위에 다시 그려볼게요.</div>
+    <button class="playBtn" id="playBtn">▶ 우리의 여정 보기</button>
+  </div>
+
+  <!-- 엔딩 -->
+  <div class="screen hide" id="ending" style="opacity:0; pointer-events:none;">
+    <div class="eyebrow">🎁 우리의 2026</div>
+    <div class="bigTitle" id="endTitle">올해도<br/>참 <span class="hl">따뜻했어요</span></div>
+    <div class="stats" id="endStats"></div>
+    <div class="sub" id="endSub" style="animation-delay:.9s;">내년에도 이 자리에서<br/>다 같이 안부를 전해요 🤍</div>
+    <button class="replay" id="replayBtn">다시 보기</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  더미 데이터 — 연말에 실제 모먼 DB로 교체
+//  각 항목: 날짜, 좌표[위도,경도], 장소명, 찍은 사람, 색, 사진(이모지+배경), 캡션
+// ══════════════════════════════════════════
+const MEMBERS = {
+  chil:  { name: '췰',   color: '#5b8def' },
+  wife:  { name: '아내',  color: '#ff6b7a' },
+  kid:   { name: '아이',  color: '#6fd8a8' },
+};
+
+const MOMENTS = [
+  { date:'2026-01-01', ll:[37.5665,126.9780], place:'서울 중구 · 보신각', by:'chil', bg:'linear-gradient(135deg,#fbc2eb,#a6c1ee)', emoji:'🎆', cap:'새해 첫 안부' },
+  { date:'2026-02-14', ll:[37.5511,126.9882], place:'용산구 · 남산타워', by:'wife', bg:'linear-gradient(135deg,#ff9a9e,#fecfef)', emoji:'🌃', cap:'발렌타인 야경' },
+  { date:'2026-03-20', ll:[37.5796,126.9770], place:'종로구 · 경복궁', by:'kid',  bg:'linear-gradient(135deg,#a1c4fd,#c2e9fb)', emoji:'🌸', cap:'봄 소풍' },
+  { date:'2026-04-12', ll:[37.5341,126.9947], place:'용산구 · 한강공원', by:'chil', bg:'linear-gradient(135deg,#d4fc79,#96e6a1)', emoji:'🚲', cap:'자전거 나들이' },
+  { date:'2026-05-05', ll:[37.5116,127.0980], place:'송파구 · 롯데월드', by:'kid',  bg:'linear-gradient(135deg,#fddb92,#d1fdff)', emoji:'🎠', cap:'어린이날!' },
+  { date:'2026-06-06', ll:[37.6584,127.0620], place:'노원구 · 중랑캠핑숲', by:'wife', bg:'linear-gradient(135deg,#84fab0,#8fd3f4)', emoji:'⛺', cap:'첫 캠핑' },
+  { date:'2026-07-24', ll:[37.7519,128.8761], place:'강릉 · 경포해변', by:'chil', bg:'linear-gradient(135deg,#a6c0fe,#f68084)', emoji:'🌊', cap:'여름 바다' },
+  { date:'2026-08-15', ll:[37.5443,126.9660], place:'용산구 · 이태원', by:'wife', bg:'linear-gradient(135deg,#f6d365,#fda085)', emoji:'🍧', cap:'한여름 빙수' },
+  { date:'2026-09-10', ll:[37.5825,127.0020], place:'성북구 · 성북동', by:'kid',  bg:'linear-gradient(135deg,#e0c3fc,#8ec5fc)', emoji:'🌕', cap:'추석 보름달' },
+  { date:'2026-10-09', ll:[37.5735,126.9769], place:'종로구 · 광화문', by:'chil', bg:'linear-gradient(135deg,#fbc7d4,#9796f0)', emoji:'🍂', cap:'가을 산책' },
+  { date:'2026-11-22', ll:[37.6176,127.0959], place:'중랑구 · 망우동', by:'wife', bg:'linear-gradient(135deg,#c1dfc4,#deecdd)', emoji:'☕', cap:'동네 카페' },
+  { date:'2026-12-24', ll:[37.5299,126.9645], place:'용산구 · 집', by:'kid',  bg:'linear-gradient(135deg,#ff6a88,#ff99ac)', emoji:'🎄', cap:'크리스마스 이브' },
+];
+
+// 캡션 emoji 깨진 것 방지용 안전 치환
+MOMENTS.forEach(m => { if (m.emoji && m.emoji.length > 3) m.emoji = '📷'; });
+</script>
+<script src="app.js"></script>
+</body>
+</html>
