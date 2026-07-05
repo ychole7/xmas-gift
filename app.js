@@ -256,41 +256,57 @@ muteBtn.addEventListener('click', () => {
 $('controls').appendChild(muteBtn);
 
 // ══════════════════════════════════════════
-//  인트로 영상 (산타가 루돌프 타고 선물 주는)
-//  열어보기 → 영상 재생 → 끝나면 오프닝으로 전환
+//  선물 인트로 (12월 25일 그날 첫 접속에만)
+//  선물 누르면 → 상자 열림 → 오프닝
 // ══════════════════════════════════════════
-const introVideo = $('introVideo');
-let introDone = false;
+function isChristmas() {
+  const d = new Date();
+  return d.getMonth() === 11 && d.getDate() === 25;   // 12월(11) 25일
+}
+function alreadyOpenedToday() {
+  try {
+    const key = 'xmas_opened_' + new Date().getFullYear();
+    return localStorage.getItem(key) === '1';
+  } catch { return false; }
+}
+function markOpenedToday() {
+  try { localStorage.setItem('xmas_opened_' + new Date().getFullYear(), '1'); } catch {}
+}
 
+// 테스트용: URL에 ?gift=1 붙이면 날짜 상관없이 선물 인트로 강제 표시
+const forceGift = new URLSearchParams(location.search).get('gift') === '1';
+const showGift = forceGift || (isChristmas() && !alreadyOpenedToday());
+
+let giftDone = false;
 function goToOpening() {
-  if (introDone) return;
-  introDone = true;
-  try { introVideo.pause(); } catch {}
-  $('videoIntro').classList.add('hide');
+  if (giftDone) return;
+  giftDone = true;
+  $('giftIntro').classList.add('hide');
   setTimeout(() => {
     $('opening').style.opacity = '1';
     $('opening').style.pointerEvents = 'auto';
   }, 500);
 }
 
-$('introPlayBtn').addEventListener('click', () => {
-  $('introOverlay').classList.add('playing');   // 문구/버튼 숨김
-  $('introSkip').classList.add('show');         // 건너뛰기 노출
-  introVideo.currentTime = 0;
-  introVideo.muted = false;
-  const pr = introVideo.play();
-  if (pr && pr.catch) pr.catch(() => {           // 소리 재생 막히면 음소거로라도 재생
-    introVideo.muted = true;
-    introVideo.play().catch(() => goToOpening());
+if (showGift) {
+  // 선물 인트로 표시
+  const wrap = $('giftWrap');
+  wrap.addEventListener('click', () => {
+    if (wrap.classList.contains('opening')) return;
+    wrap.classList.add('opening');
+    markOpenedToday();
+    Music.start();   // 선물 열 때 음악 시작
+    // 상자 열림 애니메이션(약 1.6s) 뒤 오프닝으로
+    setTimeout(goToOpening, 1700);
   });
-});
-
-// 영상 끝나면 자동으로 오프닝
-introVideo.addEventListener('ended', goToOpening);
-// 건너뛰기
-$('introSkip').addEventListener('click', goToOpening);
-// 혹시 로드 실패하면 바로 오프닝으로
-introVideo.addEventListener('error', goToOpening);
+} else {
+  // 평소엔 선물 건너뛰고 바로 오프닝
+  $('giftIntro').classList.add('hide');
+  $('giftIntro').style.display = 'none';
+  $('opening').style.opacity = '1';
+  $('opening').style.pointerEvents = 'auto';
+  giftDone = true;
+}
 
 // 지도 리사이즈 보정
 setTimeout(() => map.invalidateSize(), 300);

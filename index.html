@@ -207,37 +207,86 @@
     * { animation-duration: .01ms !important; transition-duration: .12s !important; }
   }
 
-  /* ── 인트로 영상 ── */
-  #videoIntro { padding: 0; background: #000; overflow: hidden; }
-  #introVideo {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    object-fit: contain; background: #000;
-  }
-  #introOverlay {
-    position: absolute; inset: 0; z-index: 2;
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-    padding: 0 32px calc(env(safe-area-inset-bottom,0px) + 64px);
-    background: linear-gradient(to top, rgba(6,10,28,.82) 0%, rgba(6,10,28,.2) 40%, transparent 70%);
-    transition: opacity .5s ease;
-  }
-  #introOverlay.playing { opacity: 0; pointer-events: none; }
-  .introHint {
+  /* ── 선물 인트로 ── */
+  #giftIntro { background: radial-gradient(100% 80% at 50% 38%, rgba(27,36,80,.7), rgba(6,10,28,.96)); }
+  .giftHint {
+    position: absolute; top: 24%; left: 0; right: 0; text-align: center;
     font-family: 'Gaegu', 'Pretendard', sans-serif;
-    font-size: clamp(19px, 5.5vw, 26px); font-weight: 700; color: var(--frost);
-    text-align: center; margin-bottom: 22px; text-shadow: 0 2px 12px rgba(0,0,0,.6);
+    font-size: clamp(21px, 6vw, 30px); font-weight: 700; color: var(--frost);
+    padding: 0 24px; text-shadow: 0 2px 12px rgba(0,0,0,.5);
     opacity: 0; animation: rise 1s .3s forwards;
   }
-  #videoIntro .playBtn { opacity: 0; animation: rise 1s .6s forwards; }
-  #introSkip {
-    position: absolute; top: calc(env(safe-area-inset-top,0px) + 16px); right: 18px;
-    z-index: 3; border: 1px solid var(--line); background: rgba(11,16,38,.5);
-    backdrop-filter: blur(8px); color: var(--frost-dim);
-    font-family: inherit; font-size: 12px; font-weight: 600;
-    padding: 8px 14px; border-radius: 20px; cursor: pointer;
-    opacity: 0; transition: opacity .4s ease;
+  .giftWrap {
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+    cursor: pointer; opacity: 0; animation: rise 1s .7s forwards;
   }
-  #introSkip.show { opacity: 1; }
-  #introSkip:active { transform: scale(.95); }
+  .giftWrap.opening { pointer-events: none; }
+  .gbox {
+    position: relative; width: 160px; height: 138px;
+    animation: giftFloat 2.6s ease-in-out infinite;
+  }
+  .giftWrap.opening .gbox { animation: none; }
+  @keyframes giftFloat {
+    0%,100% { transform: translateY(0) rotate(-1deg); }
+    50%     { transform: translateY(-9px) rotate(1deg); }
+  }
+  .gBody {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 140px; height: 98px; border-radius: 10px;
+    background: linear-gradient(160deg, #e0526a, #b8324a);
+    box-shadow: 0 16px 36px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.18);
+  }
+  .gBodyRibbon {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 24px; height: 100%; background: linear-gradient(180deg, #ffd98a, #f5a94e);
+  }
+  .gLid {
+    position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+    width: 156px; height: 38px; border-radius: 9px; transform-origin: center bottom;
+    background: linear-gradient(160deg, #ec6178, #c93a54);
+    box-shadow: 0 6px 18px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.22);
+    z-index: 3;
+  }
+  .gLidRibbon {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 26px; height: 100%; background: linear-gradient(180deg, #ffe4a3, #f5a94e);
+  }
+  .gBow {
+    position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+    font-size: 44px; z-index: 4; filter: drop-shadow(0 3px 6px rgba(0,0,0,.4));
+  }
+  .gBurst {
+    position: absolute; top: 44px; left: 50%; transform: translate(-50%,-50%) scale(0);
+    width: 60px; height: 60px; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle, #fff 0%, #ffe9b8 42%, transparent 70%);
+  }
+  .giftTap {
+    font-size: 13px; color: var(--frost-dim); font-weight: 600; letter-spacing: .3px;
+    animation: tapPulse 1.8s ease-in-out infinite;
+  }
+  .giftWrap.opening .giftTap { opacity: 0; transition: opacity .3s; }
+  @keyframes tapPulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+
+  /* 열림 시퀀스 */
+  .giftWrap.opening .gBow { animation: gBowPop .5s ease forwards; }
+  .giftWrap.opening .gLidRibbon,
+  .giftWrap.opening .gBodyRibbon { animation: gRibbonFade .5s ease .1s forwards; }
+  .giftWrap.opening .gLid { animation: gLidOpen 1s cubic-bezier(.5,-0.4,.4,1) .4s forwards; }
+  .giftWrap.opening .gBurst { animation: gBurstOut 1s ease .65s forwards; }
+  .giftWrap.opening .gBody { animation: gBodyFade .6s ease 1.05s forwards; }
+
+  @keyframes gBowPop { to { transform: translateX(-50%) translateY(-26px) scale(0); opacity: 0; } }
+  @keyframes gRibbonFade { to { opacity: 0; } }
+  @keyframes gLidOpen {
+    0%   { transform: translateX(-50%) translateY(0) rotate(0); }
+    40%  { transform: translateX(-50%) translateY(-16px) rotate(-8deg); }
+    100% { transform: translateX(-52%) translateY(-230px) rotate(-34deg); opacity: 0; }
+  }
+  @keyframes gBurstOut {
+    0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(20); opacity: 0; }
+  }
+  @keyframes gBodyFade { to { opacity: 0; transform: translateX(-50%) scale(1.12); } }
 
 </style>
 </head>
@@ -269,16 +318,18 @@
     <button id="skipBtn"><span class="cIcon">⏭</span><span class="cLbl">건너뛰기</span></button>
   </div>
 
-  <!-- 인트로 영상 -->
-  <div class="screen" id="videoIntro">
-    <video id="introVideo" playsinline preload="auto" poster="">
-      <source src="intro.mp4" type="video/mp4" />
-    </video>
-    <div id="introOverlay">
-      <div class="introHint" id="introHint">🎁 크리스마스 선물이 도착했어요</div>
-      <button class="playBtn" id="introPlayBtn">🎄 열어보기</button>
+  <!-- 선물 인트로 (12/25에만) -->
+  <div class="screen" id="giftIntro">
+    <div class="giftHint" id="giftHint">🎁 크리스마스 선물이 도착했어요</div>
+    <div class="giftWrap" id="giftWrap">
+      <div class="gbox">
+        <div class="gLid"><div class="gLidRibbon"></div></div>
+        <div class="gBody"><div class="gBodyRibbon"></div></div>
+        <div class="gBow">🎀</div>
+        <div class="gBurst"></div>
+      </div>
+      <div class="giftTap">눌러서 열어보기</div>
     </div>
-    <button id="introSkip">건너뛰기</button>
   </div>
 
   <!-- 오프닝 (인트로 영상 끝난 뒤 등장) -->
