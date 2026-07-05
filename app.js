@@ -219,6 +219,9 @@ $('replayBtn').addEventListener('click', () => {
 
 // ══════════════════════════════════════════
 //  배경 음악 — bgm.mp3 (같은 폴더에 위치)
+//  출처: "Christmas Night [Piano]" by Clavier-Music (Pixabay)
+//  라이선스: Pixabay Content License (크레딧 불필요하나 예의상 엔딩에 표기)
+//  ⚠️ Content ID 등록된 곡 — 유튜브 업로드 시 클레임 가능성 있음
 // ══════════════════════════════════════════
 const Music = (() => {
   const el = new Audio('bgm.mp3');
