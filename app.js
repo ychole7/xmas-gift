@@ -211,6 +211,97 @@ $('replayBtn').addEventListener('click', () => {
   setTimeout(() => { started = true; $('map').style.filter='saturate(.62) brightness(.66) contrast(1.05)'; setTimeout(runSequence, 600); }, 300);
 });
 
+// ══════════════════════════════════════════
+//  배경 음악 — "고요한 밤"(퍼블릭 도메인) 을 Web Audio로 잔잔하게 연주
+//  ※ 나중에 실제 mp3를 쓰려면 이 블록을 <audio> 방식으로 교체하면 됨
+// ══════════════════════════════════════════
+const Music = (() => {
+  let ctx = null, master = null, timer = null, playing = false, muted = false;
+
+  // 음표 주파수 (평균율, A4=440)
+  const F = { G3:196.00, A3:220.00, B3:246.94, C4:261.63, D4:293.66, E4:329.63,
+              F4:349.23, G4:392.00, A4:440.00, B4:493.88, C5:523.25, D5:587.33 };
+
+  // 고요한 밤 멜로디 — [음, 박자(비트)]. 6/8 느낌으로 잔잔하게
+  const MELODY = [
+    ['G4',1.5],['A4',.5],['G4',1],['E4',3],
+    ['G4',1.5],['A4',.5],['G4',1],['E4',3],
+    ['D5',2],['D5',1],['B4',3],
+    ['C5',2],['C5',1],['G4',3],
+    ['A4',2],['A4',1],['C5',1.5],['B4',.5],['A4',1],
+    ['G4',1.5],['A4',.5],['G4',1],['E4',3],
+    ['A4',2],['A4',1],['C5',1.5],['B4',.5],['A4',1],
+    ['G4',1.5],['A4',.5],['G4',1],['E4',3],
+    ['D5',2],['D5',1],['F4',1.5],['D5',.5],['B4',1],
+    ['C5',3],['E5',3],
+    ['C5',2],['G4',1],['E4',1.5],['G4',.5],['D4',1],
+    ['C4',6],
+  ];
+  const BEAT = 0.5; // 1비트 = 0.5초 (느리게)
+
+  function tone(freq, start, dur) {
+    // 부드러운 피아노풍: 사인+삼각 배음, 완만한 감쇠
+    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
+    const g = ctx.createGain();
+    o1.type = 'sine'; o1.frequency.value = freq;
+    o2.type = 'triangle'; o2.frequency.value = freq * 2;
+    const g2 = ctx.createGain(); g2.gain.value = .18;
+    o1.connect(g); o2.connect(g2); g2.connect(g);
+    g.connect(master);
+    const t = start, peak = .22, rel = Math.min(dur, 2.2);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(peak, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + rel);
+    o1.start(t); o2.start(t);
+    o1.stop(t + rel + .05); o2.stop(t + rel + .05);
+  }
+
+  function scheduleLoop() {
+    const now = ctx.currentTime + 0.1;
+    let t = now;
+    MELODY.forEach(([n, b]) => {
+      if (F[n]) tone(F[n], t, b * BEAT * 0.95);
+      t += b * BEAT;
+    });
+    const loopLen = (t - now) * 1000;
+    timer = setTimeout(scheduleLoop, loopLen - 100); // 끊김 없이 반복
+  }
+
+  function start() {
+    if (playing) return;
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : 0.5;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    playing = true;
+    scheduleLoop();
+  }
+  function stop() { playing = false; if (timer) clearTimeout(timer); }
+  function toggleMute() {
+    muted = !muted;
+    if (master) master.gain.setTargetAtTime(muted ? 0 : 0.5, ctx.currentTime, 0.05);
+    return muted;
+  }
+  return { start, stop, toggleMute, isMuted: () => muted };
+})();
+
+// 시작/리플레이 때 음악 켜기
+$('playBtn').addEventListener('click', () => Music.start());
+$('replayBtn').addEventListener('click', () => Music.start());
+
+// 음소거 버튼 (컨트롤 바에 추가)
+const muteBtn = document.createElement('button');
+muteBtn.id = 'muteBtn';
+muteBtn.textContent = '🔊 음악';
+muteBtn.addEventListener('click', () => {
+  const m = Music.toggleMute();
+  muteBtn.textContent = m ? '🔇 음악' : '🔊 음악';
+});
+$('controls').appendChild(muteBtn);
+
 // 지도 리사이즈 보정
 setTimeout(() => map.invalidateSize(), 300);
 window.addEventListener('resize', () => map.invalidateSize());
