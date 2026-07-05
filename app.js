@@ -256,30 +256,41 @@ muteBtn.addEventListener('click', () => {
 $('controls').appendChild(muteBtn);
 
 // ══════════════════════════════════════════
-//  산타 인트로 시퀀스
-//  선물 열기 → 음악 시작 → 산타 비행 → 상자 등장 → 상자 열림 → 오프닝
+//  인트로 영상 (산타가 루돌프 타고 선물 주는)
+//  열어보기 → 영상 재생 → 끝나면 오프닝으로 전환
 // ══════════════════════════════════════════
-function runIntro() {
-  Music.start(); // 이 클릭으로 음악 시작 (autoplay 정책 통과)
-  const stage = $('santaStage');
-  $('intro').classList.add('hide');       // 인트로 문구 페이드아웃
-  stage.classList.add('on');
+const introVideo = $('introVideo');
+let introDone = false;
 
-  // 산타 비행 + 상자 투하
-  setTimeout(() => { stage.classList.add('fly'); }, 200);
-  setTimeout(() => { stage.classList.add('drop'); }, 300);   // 1.5s 딜레이는 CSS에
-
-  // 상자 열림 (산타 지나가고 상자 안착된 뒤)
-  setTimeout(() => { stage.classList.add('open'); }, 2900);
-
-  // 빛 터질 때 오프닝 등장
+function goToOpening() {
+  if (introDone) return;
+  introDone = true;
+  try { introVideo.pause(); } catch {}
+  $('videoIntro').classList.add('hide');
   setTimeout(() => {
     $('opening').style.opacity = '1';
     $('opening').style.pointerEvents = 'auto';
-    stage.classList.remove('on', 'fly', 'drop', 'open'); // 무대 정리
-  }, 3900);
+  }, 500);
 }
-$('openBtn').addEventListener('click', runIntro);
+
+$('introPlayBtn').addEventListener('click', () => {
+  $('introOverlay').classList.add('playing');   // 문구/버튼 숨김
+  $('introSkip').classList.add('show');         // 건너뛰기 노출
+  introVideo.currentTime = 0;
+  introVideo.muted = false;
+  const pr = introVideo.play();
+  if (pr && pr.catch) pr.catch(() => {           // 소리 재생 막히면 음소거로라도 재생
+    introVideo.muted = true;
+    introVideo.play().catch(() => goToOpening());
+  });
+});
+
+// 영상 끝나면 자동으로 오프닝
+introVideo.addEventListener('ended', goToOpening);
+// 건너뛰기
+$('introSkip').addEventListener('click', goToOpening);
+// 혹시 로드 실패하면 바로 오프닝으로
+introVideo.addEventListener('error', goToOpening);
 
 // 지도 리사이즈 보정
 setTimeout(() => map.invalidateSize(), 300);

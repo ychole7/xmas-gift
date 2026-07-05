@@ -207,111 +207,38 @@
     * { animation-duration: .01ms !important; transition-duration: .12s !important; }
   }
 
-  /* ── 산타 인트로 ── */
-  #intro { background: radial-gradient(100% 80% at 50% 35%, rgba(27,36,80,.7), rgba(6,10,28,.96)); }
-  .introTitle {
+  /* ── 인트로 영상 ── */
+  #videoIntro { padding: 0; background: #000; overflow: hidden; }
+  #introVideo {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; background: #000;
+  }
+  #introOverlay {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 0 32px calc(env(safe-area-inset-bottom,0px) + 64px);
+    background: linear-gradient(to top, rgba(6,10,28,.82) 0%, rgba(6,10,28,.2) 40%, transparent 70%);
+    transition: opacity .5s ease;
+  }
+  #introOverlay.playing { opacity: 0; pointer-events: none; }
+  .introHint {
     font-family: 'Gaegu', 'Pretendard', sans-serif;
-    font-size: clamp(26px, 7vw, 38px); font-weight: 700; color: var(--frost);
+    font-size: clamp(19px, 5.5vw, 26px); font-weight: 700; color: var(--frost);
+    text-align: center; margin-bottom: 22px; text-shadow: 0 2px 12px rgba(0,0,0,.6);
     opacity: 0; animation: rise 1s .3s forwards;
   }
-  .introSub {
-    margin-top: 16px; font-size: 14px; color: var(--frost-dim); line-height: 1.6;
-    opacity: 0; animation: rise 1s .6s forwards;
+  #videoIntro .playBtn { opacity: 0; animation: rise 1s .6s forwards; }
+  #introSkip {
+    position: absolute; top: calc(env(safe-area-inset-top,0px) + 16px); right: 18px;
+    z-index: 3; border: 1px solid var(--line); background: rgba(11,16,38,.5);
+    backdrop-filter: blur(8px); color: var(--frost-dim);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    padding: 8px 14px; border-radius: 20px; cursor: pointer;
+    opacity: 0; transition: opacity .4s ease;
   }
-  #intro .playBtn { animation: rise 1s .95s forwards; }
+  #introSkip.show { opacity: 1; }
+  #introSkip:active { transform: scale(.95); }
 
-  /* 산타 무대 (기본 숨김, JS로 활성화) */
-  #santaStage {
-    position: absolute; inset: 0; z-index: 850; pointer-events: none;
-    display: none; overflow: hidden;
-  }
-  #santaStage.on { display: block; }
-
-  /* 산타+루돌프 썰매 비행 */
-  #santa {
-    position: absolute; top: 24%; left: -30%;
-    font-size: 52px; white-space: nowrap;
-    filter: drop-shadow(0 6px 12px rgba(0,0,0,.5));
-  }
-  #santa #sleigh { font-size: 44px; margin: 0 -6px; }
-  #santa #santaMan { font-size: 40px; }
-  #santaStage.fly #santa {
-    animation: santaFly 3.2s cubic-bezier(.45,.05,.55,.95) forwards;
-  }
-  @keyframes santaFly {
-    0%   { left: -35%; top: 20%; transform: scaleX(1); }
-    45%  { top: 30%; }
-    50%  { left: 42%; top: 32%; transform: scaleX(1); }   /* 중앙서 선물 투하 */
-    55%  { transform: scaleX(1); }
-    100% { left: 120%; top: 12%; transform: scaleX(1); }
-  }
-
-  /* 선물 상자 */
-  #giftBox {
-    position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%) scale(0);
-    width: 150px; height: 130px;
-  }
-  #santaStage.drop #giftBox {
-    animation: boxDrop .7s cubic-bezier(.2,1.5,.4,1) 1.5s forwards;
-  }
-  @keyframes boxDrop {
-    0%   { transform: translate(-50%,-260px) scale(.5); opacity: 0; }
-    60%  { transform: translate(-50%,-50%) scale(1.05); opacity: 1; }
-    80%  { transform: translate(-50%,-46%) scale(.97); }
-    100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
-  }
-  .giftBody {
-    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 130px; height: 92px; border-radius: 8px;
-    background: linear-gradient(160deg, #e0526a, #b8324a);
-    box-shadow: 0 14px 30px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.15);
-  }
-  .bodyRibbon {
-    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
-    width: 22px; height: 100%; background: linear-gradient(180deg, #ffd98a, #f5a94e);
-  }
-  .giftLid {
-    position: absolute; top: 26px; left: 50%; transform: translateX(-50%);
-    width: 146px; height: 34px; border-radius: 8px; transform-origin: center bottom;
-    background: linear-gradient(160deg, #ec6178, #c93a54);
-    box-shadow: 0 6px 16px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.2);
-    z-index: 3;
-  }
-  .lidRibbon {
-    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
-    width: 24px; height: 100%; background: linear-gradient(180deg, #ffe4a3, #f5a94e);
-  }
-  .bow {
-    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-    font-size: 40px; z-index: 4;
-    filter: drop-shadow(0 3px 5px rgba(0,0,0,.4));
-  }
-  .burst {
-    position: absolute; top: 40px; left: 50%; transform: translate(-50%,-50%) scale(0);
-    width: 60px; height: 60px; border-radius: 50%; z-index: 2;
-    background: radial-gradient(circle, #fff 0%, #ffe9b8 40%, transparent 70%);
-  }
-
-  /* 상자 열림 시퀀스 */
-  #santaStage.open .bow  { animation: bowPop .5s ease forwards; }
-  #santaStage.open .lidRibbon,
-  #santaStage.open .bodyRibbon { animation: ribbonFade .5s ease .1s forwards; }
-  #santaStage.open .giftLid { animation: lidOpen 1s cubic-bezier(.5,-0.4,.4,1) .45s forwards; }
-  #santaStage.open .burst { animation: burstOut 1s ease .7s forwards; }
-  #santaStage.open .giftBody { animation: bodyFade .6s ease 1.1s forwards; }
-
-  @keyframes bowPop { to { transform: translateX(-50%) translateY(-24px) scale(0); opacity: 0; } }
-  @keyframes ribbonFade { to { opacity: 0; } }
-  @keyframes lidOpen {
-    0%   { transform: translateX(-50%) translateY(0) rotate(0); }
-    40%  { transform: translateX(-50%) translateY(-14px) rotate(-8deg); }
-    100% { transform: translateX(-52%) translateY(-220px) rotate(-32deg); opacity: 0; }
-  }
-  @keyframes burstOut {
-    0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
-    100% { transform: translate(-50%,-50%) scale(16); opacity: 0; }
-  }
-  @keyframes bodyFade { to { opacity: 0; transform: translateX(-50%) scale(1.1); } }
 </style>
 </head>
 <body>
@@ -342,25 +269,19 @@
     <button id="skipBtn"><span class="cIcon">⏭</span><span class="cLbl">건너뛰기</span></button>
   </div>
 
-  <!-- 산타 인트로 -->
-  <div class="screen" id="intro">
-    <div class="introTitle">🎁 선물이 도착했어요</div>
-    <div class="introSub">열어보면, 올 한 해 우리의 순간들이 펼쳐져요</div>
-    <button class="playBtn" id="openBtn">🎄 선물 열어보기</button>
-  </div>
-
-  <!-- 산타 애니메이션 무대 (인트로 클릭 후) -->
-  <div id="santaStage">
-    <div id="santa">🦌<span id="sleigh">🛷</span><span id="santaMan">🎅</span></div>
-    <div id="giftBox">
-      <div class="giftLid"><div class="lidRibbon"></div></div>
-      <div class="giftBody"><div class="bodyRibbon"></div></div>
-      <div class="bow">🎀</div>
-      <div class="burst"></div>
+  <!-- 인트로 영상 -->
+  <div class="screen" id="videoIntro">
+    <video id="introVideo" playsinline preload="auto" poster="">
+      <source src="intro.mp4" type="video/mp4" />
+    </video>
+    <div id="introOverlay">
+      <div class="introHint">🎁 우리 가족에게 선물이 도착했어요</div>
+      <button class="playBtn" id="introPlayBtn">🎄 열어보기</button>
     </div>
+    <button id="introSkip">건너뛰기</button>
   </div>
 
-  <!-- 오프닝 (상자 열린 뒤 등장) -->
+  <!-- 오프닝 (인트로 영상 끝난 뒤 등장) -->
   <div class="screen" id="opening" style="opacity:0; pointer-events:none;">
     <div class="eyebrow">🎄 Merry Christmas</div>
     <div class="bigTitle">2026년,<br/>우리가 함께한 <span class="hl">순간들</span></div>
