@@ -177,20 +177,26 @@
 
   /* 하단 컨트롤 */
   #controls {
-    position: absolute; bottom: calc(env(safe-area-inset-bottom,0px) + 20px);
+    position: absolute; bottom: calc(env(safe-area-inset-bottom,0px) + 22px);
     left: 50%; transform: translateX(-50%); z-index: 700;
-    display: flex; gap: 10px; align-items: center;
-    background: rgba(11,16,38,.55); backdrop-filter: blur(10px);
-    border: 1px solid var(--line); padding: 8px 10px; border-radius: 30px;
+    display: flex; gap: 4px; align-items: stretch;
+    background: rgba(11,16,38,.62); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); padding: 6px; border-radius: 22px;
     opacity: 0; transition: opacity .5s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
   }
   #controls.show { opacity: 1; }
   #controls button {
     border: none; background: transparent; color: var(--frost);
-    font-size: 15px; cursor: pointer; padding: 6px 12px; border-radius: 20px;
-    font-family: inherit; font-weight: 600;
+    cursor: pointer; padding: 8px 16px; border-radius: 16px;
+    font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    min-width: 62px; white-space: nowrap;
+    transition: background .15s ease;
   }
-  #controls button:active { background: rgba(255,255,255,.1); }
+  #controls button:active { background: rgba(255,255,255,.12); }
+  #controls .cIcon { font-size: 17px; line-height: 1; }
+  #controls .cLbl { font-size: 11px; font-weight: 600; color: var(--frost-dim); letter-spacing: .2px; }
 
   @media (prefers-reduced-motion: reduce) {
     * { animation-duration: .01ms !important; transition-duration: .12s !important; }
@@ -221,8 +227,8 @@
   </div></div>
 
   <div id="controls">
-    <button id="pauseBtn">⏸ 일시정지</button>
-    <button id="skipBtn">건너뛰기 ⏭</button>
+    <button id="pauseBtn"><span class="cIcon">⏸</span><span class="cLbl">일시정지</span></button>
+    <button id="skipBtn"><span class="cIcon">⏭</span><span class="cLbl">건너뛰기</span></button>
   </div>
 
   <!-- 오프닝 -->
